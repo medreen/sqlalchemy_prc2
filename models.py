@@ -3,7 +3,8 @@ from sqlalchemy import String,Integer,Float,DateTime, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from datetime import datetime
 
-engine = create_engine("postgresql://postgres:Colesprouse2311!@localhost:5432/md_db", echo=True)
+# create a connection to the database
+engine = create_engine("sqlite:///./md_db.db", echo=True)
 
 class Base(DeclarativeBase):
     pass
@@ -58,4 +59,5 @@ class Payment(Base):
     payment_method: Mapped[str] = mapped_column(String(30))
     payment_status: Mapped[str] = mapped_column(String(30))
 
+# create the tables in the database
 Base.metadata.create_all(engine)
