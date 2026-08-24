@@ -1,9 +1,9 @@
 from sqlalchemy import ForeignKey
-from sqlalchemy import String,Integer,Float,DateTime
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
+from sqlalchemy import String,Integer,Float,DateTime, create_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from datetime import datetime
+
+engine = create_engine("postgresql://postgres:Colesprouse2311!@localhost:5432/md_db", echo=True)
 
 class Base(DeclarativeBase):
     pass
@@ -57,3 +57,5 @@ class Payment(Base):
     amount: Mapped[float] = mapped_column(Float)
     payment_method: Mapped[str] = mapped_column(String(30))
     payment_status: Mapped[str] = mapped_column(String(30))
+
+Base.metadata.create_all(engine)
