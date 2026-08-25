@@ -27,8 +27,16 @@ def home():
 @app.route("/products")
 def products():
     if request.method == 'GET':
+        # fetch the list of all products from the database
         stmt = select(Product)
         products = session.scalars(stmt)
+
+        results = []
+        for prod in products:
+            p = {"id" : prod.id, "product name" : prod.product_name, "buying price" : prod.buying_price, "selling price" : prod.selling_price}
+            results.append(p)
+        return jsonify(results), 200
+
     elif request.method == 'POST':
         # store the data in a variable
         data = request.get_json()
