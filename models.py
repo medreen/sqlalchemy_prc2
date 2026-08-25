@@ -1,6 +1,6 @@
 from sqlalchemy import ForeignKey
 from sqlalchemy import String,Integer,Float,DateTime, create_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import datetime
 
 # create a connection to the database
