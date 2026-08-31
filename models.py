@@ -17,7 +17,7 @@ class User(Base):
     email : Mapped[str] = mapped_column(String(100))
     password : Mapped[str] = mapped_column(String(200))
     phone_number: Mapped[str] = mapped_column(String(20))
-
+    
 class Product(Base):
     __tablename__ = "products"
 
@@ -39,8 +39,9 @@ class Sales_detail(Base):
 
     id : Mapped[int] = mapped_column(Integer, primary_key=True)
     product_id : Mapped[int] = mapped_column(ForeignKey("products.id"))
-    sales_id : Mapped[int] = mapped_column(ForeignKey("sales.id"))
+    sale_id : Mapped[int] = mapped_column(ForeignKey("sales.id"))
     quantity : Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 class Purchase(Base):
     __tablename__ = "purchases"
@@ -49,6 +50,7 @@ class Purchase(Base):
     product_id : Mapped[int] = mapped_column(ForeignKey("products.id"))
     quantity : Mapped[int] = mapped_column(Integer)
     buying_price : Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 class Payment(Base):
     __tablename__ = "payments"
@@ -58,6 +60,7 @@ class Payment(Base):
     amount: Mapped[float] = mapped_column(Float)
     payment_method: Mapped[str] = mapped_column(String(30))
     payment_status: Mapped[str] = mapped_column(String(30))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 # create the tables in the database
 Base.metadata.create_all(engine)
