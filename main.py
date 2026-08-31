@@ -44,7 +44,10 @@ def products():
             error = {"Error":"Ensure all fields are set"}
             return jsonify(error), 403
         else:
-            pass
+            new_product = Product(product_name=data['product_name'], buying_price=data['buying_price'], selling_price=data['selling_price'])
+            session.add(new_product)
+            session.commit()
+            return jsonify({"message":"Product created successfully"}), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
