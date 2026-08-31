@@ -54,7 +54,7 @@ def register_user():
             phone_number=data['phone_number']
         )
         session.add(new_user)
-        session.commit()  # <-- this was missing
+        session.commit()  
 
         return jsonify({'message': 'User added successfully'}), 201
     else:
@@ -116,16 +116,16 @@ def sales():
 
         results = []
         for sale in sales:
-            s = {"id" : sale.id, "user_id" : user['id'], "sale_date" : sale.sale_date}
+            s = {"id" : sale.id, "user_id" : user['id'], "created_at" : sale.created_at}
             results.append(s)
         return jsonify(results), 200
 
     elif request.method == 'POST':
         data = request.get_json()
-        if data['sale_date'] == '':
+        if not data:
             error = {'err' : 'Ensure all fields are set'}
         else:
-            new_sale = Sale(user_id=user['id'], sale_date=datetime.now())
+            new_sale = Sale(user_id=user['id'], created_at=datetime.now())
             session.add(new_sale)
             session.commit()
             return jsonify({'message' : 'Sale created successfully'})
@@ -147,11 +147,11 @@ def sales_details():
 
     elif request.method == 'POST':
         data = request.get_json()
-        if data['product_id'] == '' or data['sale_id'] == '' or data['quantity'] == '' or data['created_at'] == '':
+        if data['product_id'] == '' or data['sale_id'] == '' or data['quantity'] == '':
             error = {'err' : 'Ensure all fields are set'}
             return jsonify(error), 403
         else:
-            new_detail = Sales_detail(product_id=data['product_id'], sale_id=data['sale_id'], quantity=data['quantity'], created_at=data['created_at'])
+            new_detail = Sales_detail(product_id=data['product_id'], sale_id=data['sale_id'], quantity=data['quantity'], created_at=datetime.now())
             session.add(new_detail)
             session.commit()
             return jsonify({'message' : 'Sales detail created successfully'}), 201
@@ -167,17 +167,17 @@ def purchases():
 
         results = []
         for purchase in purchases:
-            p = {"id" : purchase.id, "product_id" : purchase.product_id, "quantity" : purchase.quantity, "buying_price" : purchase.buying_price}
+            p = {"id" : purchase.id, "product_id" : purchase.product_id, "quantity" : purchase.quantity, "buying_price" : purchase.buying_price, "created_at" : purchase.created_at}
             results.append(p)
         return jsonify(results), 200
 
     elif request.method == 'POST':
         data = request.get_json()
-        if data['product_id'] == '' or data['quantity'] == '' or data['buying_price'] == '' or data['created_at'] == '':
+        if data['product_id'] == '' or data['quantity'] == '' or data['buying_price'] == '':
             error = {'err' : 'Ensure all fields are set'}
             return jsonify(error), 403
         else:
-            new_purchase = Purchase(product_id=data['product_id'], quantity=data['quantity'], buying_price=data['buying_price'], created_at=data['created_at'])
+            new_purchase = Purchase(product_id=data['product_id'], quantity=data['quantity'], buying_price=data['buying_price'], created_at=datetime.now())
             session.add(new_purchase)
             session.commit()
             return jsonify({'message' : 'Purchase created successfully'}), 201
@@ -193,17 +193,17 @@ def payments():
 
         results = []
         for payment in payments:
-            p = {"id" : payment.id, "sales_id" : payment.sales_id, "amount" : payment.amount, "payment_method" : payment.payment_method, "payment_status" : payment.payment_status, "created_at" : payment.created_at}
+            p = {"id" : payment.id, "sale_id" : payment.sale_id, "amount" : payment.amount, "payment_method" : payment.payment_method, "payment_status" : payment.payment_status, "created_at" : payment.created_at}
             results.append(p)
         return jsonify(results), 200
 
     elif request.method == 'POST':
         data = request.get_json()
-        if data['sales_id'] == '' or data['amount'] == '' or data['payment_method'] == '' or data['payment_status'] == '' or data['created_at'] == '':
+        if data['sale_id'] == '' or data['amount'] == '' or data['payment_method'] == '' or data['payment_status'] == '':
             error = {'err' : 'Ensure all fields are set'}
             return jsonify(error), 403
         else:
-            new_payment = Payment(sales_id=data['sales_id'], amount=data['amount'], payment_method=data['payment_method'], payment_status=data['payment_status'], created_at=data['created_at'])
+            new_payment = Payment(sale_id=data['sale_id'], amount=data['amount'], payment_method=data['payment_method'], payment_status=data['payment_status'], created_at=datetime.now())
             session.add(new_payment)
             session.commit()
             return jsonify({'message' : 'Payment created successfully'}), 201
