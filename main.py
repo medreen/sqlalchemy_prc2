@@ -9,12 +9,19 @@ from flask import Flask,request,jsonify
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from flask_bcrypt import generate_password_hash, check_password_hash
+from datetime import datetime
 
 from models import User,Product,Sale,Sales_detail,Purchase,Payment, engine, Base
 import json
 
 app = Flask(__name__)
 session = Session(engine)
+
+user = {"id": '1',
+        "full_name":"Binti",
+        "email":"binti@gmail.com",
+        "password":"binti5",
+        "phone_number":"0717238745"}
 
 @app.route("/")
 def home():
@@ -29,42 +36,51 @@ def home():
 def register_user():
     if request.method == 'POST':
         data = request.get_json()
-        if data['full_name'] == '' or data['email'] == '' or data['password'] == '' or data['phone_number'] == '':
-            err = {'err' : 'Ensure all fields are set'}
-            return jsonify(err), 405
-        else:
-            user_pass = data['password']
-            hashed_password = generate_password_hash(user_pass)
-            new_user = User(full_name=data['full_name'], email=data['email'], password=hashed_password, phone_number=data['phone_number'])
-            session.add(new_user)
-            return jsonify({'message' : 'User added successfully'}), 201
+
+        if not data.get('full_name') or not data.get('email') or not data.get('password') or not data.get('phone_number'):
+            return jsonify({'err': 'Ensure all fields are set'}), 400
+
+        # check if email already exists
+        stmt = select(User).where(User.email == data['email'])
+        existing_user = session.scalars(stmt).first()
+        if existing_user:
+            return jsonify({'err': 'Email already registered'}), 409
+
+        hashed_password = generate_password_hash(data['password'])
+        new_user = User(
+            full_name=data['full_name'],
+            email=data['email'],
+            password=hashed_password,
+            phone_number=data['phone_number']
+        )
+        session.add(new_user)
+        session.commit()  # <-- this was missing
+
+        return jsonify({'message': 'User added successfully'}), 201
     else:
-        error = {"err":"Method not allowed"}
-        return jsonify(error), 405
+        return jsonify({'err': 'Method not allowed'}), 405
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         data = request.get_json()
-        if data['email'] == '' or data['password'] == '':
-            err = {'err' : 'Ensure all fields are set'}
-            return jsonify(err), 405
+        if not data.get('email') or not data.get('password'):
+            return jsonify({'err': 'Ensure all fields are set'}), 400
+
+        user_email = data['email']
+        stmt = select(User).where(User.email == user_email)
+        user = session.scalars(stmt).first()
+
+        if user and check_password_hash(user.password, data['password']):
+            return jsonify({'message': 'Login successful'}), 200
         else:
-            user_email = data['email']
-            stmt = select(User).where(User.email == user_email)
-            user = session.scalars(stmt)
-
-            if user:
-                user_pass = data['password']
-                if check_password_hash(user.password,user_pass):
-                    return jsonify({'message' : 'Login successful'}), 200
+            return jsonify({'err': 'Invalid email or password'}), 401
     else:
-        error = {"err":"Method not allowed"}
-        return jsonify(error), 405
+        return jsonify({'err': 'Method not allowed'}), 405
 
 
-@app.route("/products")
+@app.route("/products", methods = ['GET', 'POST'])
 def products():
     if request.method == 'GET':
         # fetch the list of all products from the database
@@ -81,10 +97,10 @@ def products():
         # store the data in a variable
         data = request.get_json()
         if data['product_name'] == '' or data['buying_price'] == '' or data['selling_price'] == '':
-            error = {"Error":"Ensure all fields are set"}
+            error = {"error":"Ensure all fields are set"}
             return jsonify(error), 403
         else:
-            new_product = Product(product_name=data['product_name'], buying_price=data['buying_price'], selling_price=data['selling_price'])
+            new_product = Product(user_id = user['id'], product_name=data['product_name'], buying_price=data['buying_price'], selling_price=data['selling_price'])
             session.add(new_product)
             session.commit()
             return jsonify({"message":"Product created successfully"}), 201
@@ -95,34 +111,105 @@ def products():
 @app.route('/sales', methods=['GET', 'POST'])
 def sales():
     if request.method == 'GET':
-        stmt = select(Sale)
-        sales = session.scalars(stmt)
+        query = select(Sale)
+        sales = session.scalars(query)
 
-        sales_list = []
+        results = []
         for sale in sales:
-            s = {
-                "id": sale.id,
-                "user_id": sale.user_id,
-                "sale_date": sale.sale_date
-            }
-            sales_list.append(s)
-            return jsonify(sales_list), 200
-
+            s = {"id" : sale.id, "user_id" : user['id'], "sale_date" : sale.sale_date}
+            results.append(s)
+        return jsonify(results), 200
 
     elif request.method == 'POST':
         data = request.get_json()
         if data['sale_date'] == '':
             error = {'err' : 'Ensure all fields are set'}
         else:
-            new_sale = Sale(sale_date=data['sale_date'])
+            new_sale = Sale(user_id=user['id'], sale_date=datetime.now())
             session.add(new_sale)
             session.commit()
             return jsonify({'message' : 'Sale created successfully'})
     else:
-        error = {'error': 'method not allowed'}
+        error = {'error': 'Method not allowed'}
         return jsonify(error), 405
 
+@app.route('/sales_details', methods=['GET', 'POST'])
+def sales_details():
+    if request.method == 'GET':
+        query = select(Sales_detail)
+        sales_details = session.scalars(query)
 
+        results = []
+        for detail in sales_details:
+            d = {"id" : detail.id, "product_id" : detail.product_id, "sales_id" : detail.sales_id, "quantity" : detail.quantity}
+            results.append(d)
+        return jsonify(results), 200
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        if data['product_id'] == '' or data['sales_id'] == '' or data['quantity'] == '':
+            error = {'err' : 'Ensure all fields are set'}
+            return jsonify(error), 403
+        else:
+            new_detail = Sales_detail(product_id=data['product_id'], sales_id=data['sales_id'], quantity=data['quantity'])
+            session.add(new_detail)
+            session.commit()
+            return jsonify({'message' : 'Sales detail created successfully'}), 201
+    else:
+        error = {'error': 'Method not allowed'}
+        return jsonify(error), 405
+
+@app.route('/purchases', methods=['GET', 'POST'])
+def purchases():
+    if request.method == 'GET':
+        query = select(Purchase)
+        purchases = session.scalars(query)
+
+        results = []
+        for purchase in purchases:
+            p = {"id" : purchase.id, "product_id" : purchase.product_id, "quantity" : purchase.quantity, "buying_price" : purchase.buying_price}
+            results.append(p)
+        return jsonify(results), 200
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        if data['product_id'] == '' or data['quantity'] == '' or data['buying_price'] == '':
+            error = {'err' : 'Ensure all fields are set'}
+            return jsonify(error), 403
+        else:
+            new_purchase = Purchase(product_id=data['product_id'], quantity=data['quantity'], buying_price=data['buying_price'])
+            session.add(new_purchase)
+            session.commit()
+            return jsonify({'message' : 'Purchase created successfully'}), 201
+    else:
+        error = {'error': 'Method not allowed'}
+        return jsonify(error), 405
+
+@app.route('/payments', methods=['GET', 'POST'])
+def payments(): 
+    if request.method == 'GET':
+        query = select(Payment)
+        payments = session.scalars(query)
+
+        results = []
+        for payment in payments:
+            p = {"id" : payment.id, "sales_id" : payment.sales_id, "amount" : payment.amount, "payment_method" : payment.payment_method, "payment_status" : payment.payment_status}
+            results.append(p)
+        return jsonify(results), 200
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        if data['sales_id'] == '' or data['amount'] == '' or data['payment_method'] == '' or data['payment_status'] == '':
+            error = {'err' : 'Ensure all fields are set'}
+            return jsonify(error), 403
+        else:
+            new_payment = Payment(sales_id=data['sales_id'], amount=data['amount'], payment_method=data['payment_method'], payment_status=data['payment_status'])
+            session.add(new_payment)
+            session.commit()
+            return jsonify({'message' : 'Payment created successfully'}), 201
+    else:
+        error = {'error': 'Method not allowed'}
+        return jsonify(error), 405
 
 
 app.run(debug=True)

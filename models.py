@@ -32,7 +32,7 @@ class Sale(Base):
     
     id : Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id : Mapped[int] = mapped_column(ForeignKey("users.id"))
-    sale_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    sale_date: Mapped[datetime] = mapped_column(DateTime)
 
 class Sales_detail(Base):
     __tablename__ = "sales_details"
