@@ -56,7 +56,7 @@ def register_user():
         session.add(new_user)
         session.commit()  
 
-        return jsonify({'message': 'User added successfully'}), 201
+        return jsonify({'message': 'User added successfully', 'user_id': new_user.id}), 201
     else:
         return jsonify({'err': 'Method not allowed'}), 405
 
@@ -66,16 +66,16 @@ def login():
     if request.method == 'POST':
         data = request.get_json()
         if not data.get('email') or not data.get('password'):
-            return jsonify({'err': 'Ensure all fields are set'}), 400
+            return jsonify({'err': 'Ensure all fields are set'}), 403
 
         user_email = data['email']
         stmt = select(User).where(User.email == user_email)
         user = session.scalars(stmt).first()
 
         if user and check_password_hash(user.password, data['password']):
-            return jsonify({'message': 'Login successful'}), 200
+            return jsonify({'message': 'Login successful', 'user_id': user.id}), 200
         else:
-            return jsonify({'err': 'Invalid email or password'}), 401
+            return jsonify({'err': 'Invalid email or password'}), 401    
     else:
         return jsonify({'err': 'Method not allowed'}), 405
 
