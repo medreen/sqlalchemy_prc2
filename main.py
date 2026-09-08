@@ -9,7 +9,10 @@ from flask import Flask,request,jsonify
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from flask_bcrypt import generate_password_hash, check_password_hash
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from datetime import datetime
+import os
+from dotenv import load_dotenv
 
 from models import User,Product,Sale,Sales_detail,Purchase,Payment, engine, Base
 import json
@@ -17,11 +20,9 @@ import json
 app = Flask(__name__)
 session = Session(engine)
 
-user = {"id": '1',
-        "full_name":"Binti",
-        "email":"binti@gmail.com",
-        "password":"binti5",
-        "phone_number":"0717238745"}
+# jwt access token declaration
+app.config["JWT_SECRET_KEY"] = os.getenv('JWT_SECRET_KEY')
+jwt = JWTManager(app)
 
 @app.route("/")
 def home():
@@ -56,7 +57,10 @@ def register_user():
         session.add(new_user)
         session.commit()  
 
-        return jsonify({'message': 'User added successfully', 'user_id': new_user.id}), 201
+        # create the access token
+        token = create_access_token(identity=data['email'])
+
+        return jsonify({'message': 'User added successfully', 'Token': token}), 201
     else:
         return jsonify({'err': 'Method not allowed'}), 405
 
@@ -73,7 +77,8 @@ def login():
         user = session.scalars(stmt).first()
 
         if user and check_password_hash(user.password, data['password']):
-            return jsonify({'message': 'Login successful', 'user_id': user.id}), 200
+            token = create_access_token(identity=user_email)
+            return jsonify({'message': 'Login successful', 'Token': token}), 200
         else:
             return jsonify({'err': 'Invalid email or password'}), 401    
     else:
@@ -81,7 +86,12 @@ def login():
 
 
 @app.route("/products", methods = ['GET', 'POST'])
+@jwt_required()
 def products():
+    email = get_jwt_identity()
+    stmt = select(User).where(User.email==email).first()
+    user = session.scalars(stmt)
+
     if request.method == 'GET':
         # fetch the list of all products from the database
         stmt = select(Product)
@@ -109,7 +119,12 @@ def products():
         return jsonify(error), 405
 
 @app.route('/sales', methods=['GET', 'POST'])
+@jwt_required()
 def sales():
+    email = get_jwt_identity()
+    stmt = select(User).where(User.email==email).first()
+    user = session.scalars(stmt)
+
     if request.method == 'GET':
         query = select(Sale)
         sales = session.scalars(query)
@@ -134,7 +149,12 @@ def sales():
         return jsonify(error), 405
 
 @app.route('/sales-details', methods=['GET', 'POST'])
+@jwt_required()
 def sales_details():
+    email = get_jwt_identity()
+    stmt = select(User).where(User.email==email).first()
+    user = session.scalars(stmt)
+
     if request.method == 'GET':
         query = select(Sales_detail)
         sales_details = session.scalars(query)
@@ -160,7 +180,12 @@ def sales_details():
         return jsonify(error), 405
 
 @app.route('/purchases', methods=['GET', 'POST'])
+@jwt_required()
 def purchases():
+    email = get_jwt_identity()
+    stmt = select(User).where(User.email==email).first()
+    user = session.scalars(stmt)
+
     if request.method == 'GET':
         query = select(Purchase)
         purchases = session.scalars(query)
@@ -186,7 +211,12 @@ def purchases():
         return jsonify(error), 405
 
 @app.route('/payments', methods=['GET', 'POST'])
+@jwt_required()
 def payments(): 
+    email = get_jwt_identity()
+    stmt = select(User).where(User.email==email).first()
+    user = session.scalars(stmt)
+
     if request.method == 'GET':
         query = select(Payment)
         payments = session.scalars(query)
